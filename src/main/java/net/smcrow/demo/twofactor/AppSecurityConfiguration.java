@@ -1,6 +1,7 @@
 package net.smcrow.demo.twofactor;
 
 import net.smcrow.demo.twofactor.user.StandardUserDetailService;
+import net.smcrow.demo.twofactor.verify.TwoFactorAuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,13 +18,17 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 public class AppSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Autowired
-    StandardUserDetailService standardUserDetailService;
+    private StandardUserDetailService standardUserDetailService;
+
+    @Autowired
+    private TwoFactorAuthenticationSuccessHandler twoFactorAuthenticationSuccessHandler;
 
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         // Webjar resources
         httpSecurity.authorizeRequests().antMatchers("/webjars/**").permitAll()
         .and().formLogin().loginPage("/login").permitAll()
+                .successHandler(twoFactorAuthenticationSuccessHandler)
         .and().logout().permitAll();
     }
 
