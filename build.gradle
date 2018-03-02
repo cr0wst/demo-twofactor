@@ -32,6 +32,7 @@ dependencies {
 	compile('org.springframework.boot:spring-boot-devtools')
 	compile('com.h2database:h2')
 	compile('org.webjars:bootstrap:4.0.0-1')
+	compile('com.nexmo:client:3.3.0')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 	testCompile('org.springframework.security:spring-security-test')
 }
