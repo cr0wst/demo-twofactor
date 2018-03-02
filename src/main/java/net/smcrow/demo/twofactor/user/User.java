@@ -19,6 +19,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     Role role;
 
+    @Column(name = "phone")
+    String phone;
+
     @PersistenceConstructor
     public User() {
         // Empty constructor for JPA
@@ -59,5 +62,13 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 }
