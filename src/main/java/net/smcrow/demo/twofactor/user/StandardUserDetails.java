@@ -18,7 +18,7 @@ public class StandardUserDetails implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = new HashSet<>();
-        authorities.add(this.user.getRole());
+        authorities.add(Role.PRE_VERIFICATION_USER);
         return authorities;
     }
 
