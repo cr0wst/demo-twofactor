@@ -67,7 +67,7 @@ public class NexmoVerificationService {
             requestVerification(phone);
             return false;
         } catch (IOException | NexmoClientException e) {
-            throw new VerificationRequestFailedException();
+            throw new VerificationRequestFailedException(e);
         }
     }
 
@@ -89,11 +89,10 @@ public class NexmoVerificationService {
                 now.add(EXPIRATION_INTERVALS, EXPIRATION_INCREMENT);
 
                 Verification verification = new Verification(phone, requestId, now.getTime());
-                System.out.println("New Verification Registered: " + phone + " " + requestId + " " + now.getTime());
                 return verificationRepository.save(verification);
             }
         } catch (IOException | NexmoClientException e) {
-            throw new VerificationRequestFailedException();
+            throw new VerificationRequestFailedException(e);
         }
 
         throw new VerificationRequestFailedException();
