@@ -7,7 +7,7 @@ import java.util.Date;
 import java.util.Optional;
 
 @Repository
-public interface VerificationRepository extends JpaRepository<Verification, String>{
+public interface VerificationRepository extends JpaRepository<Verification, String> {
     Optional<Verification> findByPhone(String phone);
 
     void deleteByExpirationDateBefore(Date date);
