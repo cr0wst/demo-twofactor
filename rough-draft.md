@@ -274,7 +274,7 @@ public class NexmoVerificationService {
         return generateAndSaveNewVerification(phone);
     }
 
-      public boolean verify(String phone, String code) throws VerificationRequestFailedException {
+    public boolean verify(String phone, String code) throws VerificationRequestFailedException {
         try {
             Verification verification = retrieveVerification(phone);
             if (verifyClient.check(verification.getRequestId(), code).getStatus() == 0) {
