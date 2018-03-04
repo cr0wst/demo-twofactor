@@ -20,7 +20,7 @@ In order to follow along with the tutorial you will need the following:
 First, clone the `getting-started` branch.
 
 ```
-$ git clone git@github.com:cr0wst/demo-twofactor.git -b getting-started
+$ git clone https://github.com/cr0wst/demo-twofactor.git -b getting-started
 $ cd demo-twofactor
 ```
 
