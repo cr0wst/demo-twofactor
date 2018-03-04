@@ -8,7 +8,7 @@ Two-Factor authentication adds an extra layer of security to your web applicatio
 
 Let's explore how you can add two-factor authentication to an existing web application by utilizing Nexmo.
 
-## Before you begin
+# Before you begin
 In order to follow along with the tutorial you will need the following:
 
 * A general understanding of Java and Enterprise Java technologies.
@@ -16,7 +16,7 @@ In order to follow along with the tutorial you will need the following:
 * A [Nexmo Developer Account](https://developer.nexmo.com/) along with an api key and secret.
 * A clone of the [`getting-started`](https://github.com/cr0wst/demo-twofactor/tree/getting-started) branch on GitHub
 
-## Get the Code
+# Get the Code
 First, clone the `getting-started` branch.  This is the code base we will be working with.  It is a very rudimentary application with Spring security.
 
 ```
@@ -24,7 +24,7 @@ $ git clone git@github.com:cr0wst/demo-twofactor.git -b getting-started
 $ cd demo-twofactor
 ```
 
-## Let's See What We're Working With
+# Let's See What We're Working With
 The example application is built using [Spring Boot](https://projects.spring.io/spring-boot/).  If you have [Gradle](https://gradle.org/) installed on your system, you should be able to execute the `bootRun` task to start the application.
 
 If not, no worries, the repository contains a Gradle wrapper which will still allow you to execute tasks.
@@ -37,14 +37,14 @@ This will download any dependencies, compile the application, and start the embe
 
 Once the server has been started, you should be able to navigate to http://localhost:8080 to see the sample application.
 
-### A Little About the Application
+## A Little About the Application
 The sample application is built using Spring and Spring Security.  There are three pages:
 
 * The [home page](http://localhost:8080/login) - accessible by everybody.
 * The [login page](http://localhost:8080/login) - allows users to enter a username and password (default is `demo`/`demo`).
 * The [secret page](http://localhost:8080/seret) - accessible only by users with the `Role.USERS` role.
 
-## Adding Two-Factor Authentication
+# Adding Two-Factor Authentication
 Currently, when a user logs in we have no way of determining if they are who they say they are.  Our only acceptance criteria is that they have provided a username and a password.  What if this information was stolen?
 
 There is something that I guarantee almost 90% of you have within arm's reach.  A mobile, not necessarily a smart one, phone. 
@@ -58,26 +58,23 @@ Here's how it's going to work:
 
 We are going to utilize the Nexmo [Verify API](https://developer.nexmo.com/verify/overview) to generate the code, and to check and see if the code they entered is valid.
 
-### Creating a New Role
-The first step will be to create a new role.  Right now, the application only has the `USER` role as part of the `Role` enum.
+## Creating a New Role
+The first step will be to create a new role.  This role will be used to hold the authenticated user in a purgatory state until we have verified their identity. 
 
 Add the `PRE_VERIFICATION_USER` role to the `Role` enum.
 
 ```java
+// src/main/net/smcrow/demo/twofactor/user/Role.java
 public enum Role implements GrantedAuthority {
     USER, PRE_VERIFICATION_USER;
-
-    @Override
-    public String getAuthority() {
-        return "ROLE_" + this.name();
-    }
+    // ...
 }
 ```
-This new role is going to be applied to every user that logs into our application.
 
-Now, let's set it as the default role to be applied in the `StandardUserDetails` class.
-
+In order for it to be applied as the default role, we need to update the `getAuthorities()` method of the `StandardUserDetails` class.  Add the following:
+		
 ```java
+// src/main/net/smcrow/demo/twofactor/user/StandardUserDetails.java
 @Override
 public Collection<? extends GrantedAuthority> getAuthorities() {
     Set<GrantedAuthority> authorities = new HashSet<>();
@@ -86,17 +83,14 @@ public Collection<? extends GrantedAuthority> getAuthorities() {
 }
 ```
 
-This class contains the information about the user once they are authenticated.  The `getAuthorities` method is used to see what roles they have.
-
-### Handling Verification Information
+## Handling Verification Information
 Nexmo will provide us with a *request id* that we will need to use when confirming the code provided by the user. There are a variety of ways we can store this information. In this tutorial, we will be persisting it into a database.
 
-#### Storing `Verification` Information
+### Storing `Verification` Information
 First create a `Verification` class in the `verify` package.
 
-This class will be used to store our phone number and request id pairs.
-
 ```java
+// src/main/net/smcrow/demo/twofactor/verify/Verification.java
 @Entity
 public class Verification {
     @Id
@@ -120,38 +114,22 @@ public class Verification {
         this.expirationDate = expirationDate;
     }
 
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getRequestId() {
-        return requestId;
-    }
-
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
-    }
-
-    public Date getExpirationDate() {
-        return expirationDate;
-    }
-
-    public void setExpirationDate(Date expirationDate) {
-        this.expirationDate = expirationDate;
-    }
+	// ... Getters and Setters
 }
 ```
 
-Notice that it also has a column for storing `expirationDate`.  Nexmo Verify API requests are valid for five minutes by default.  We will use the Spring Scheduler to clean up these requests when they are no longer valid.
+Notice, we are also storing the `expirationDate`.  By default, the Verify API requests are only valid for five minutes.  They will get deleted from the table when either:
 
-#### Creating a Repository
-Before we can delete the expired `Verification` entities, it would be helpful to create a repository that would let us query entities to be deleted.  Create the `VerificationRepository` interface in the `verify` package.
+* The user has successfully verified their identity.
+* They are expired.
+
+We will take advantage of Spring Scheduler to clean them up periodically.
+
+### Working with the Verification Information
+Create the `VerificationRepository` interface in the `verify` package.
 
 ```java
+// src/mainnet/smcrow/demo/twofactor/verify/VerificationRepository.java
 @Repository
 public interface VerificationRepository extends JpaRepository<Verification, String> {
     Optional<Verification> findByPhone(String phone);
@@ -160,12 +138,11 @@ public interface VerificationRepository extends JpaRepository<Verification, Stri
 }
 ```
 
-This takes advantage of the `JpaRepository` interface along with Spring to create queries based on method names.
-
-#### Deleting Expired Requests
+### Deleting Expired Requests
 In the `twofactor` package, create the following configuration class.
 
 ```java
+// src/main/net/smcrow/demo/twofactor/ScheduleConfiguration.java
 @Configuration
 @EnableScheduling
 public class ScheduleConfiguration {
@@ -182,7 +159,10 @@ public class ScheduleConfiguration {
 
 This will set up a scheduled command to be executed every second that will query for any expired `Verification` entities and delete them.
 
-### Setting Up the Nexmo Client
+## Setting Up the Nexmo Client
+We will be using the [nexmo-java](https://github.com/Nexmo/nexmo-java) client for interacting with Nexmo.
+
+### Declare the Dependency
 First, add the following dependency to your `build.gradle` file.
 
 ```groovy
@@ -191,7 +171,9 @@ dependencies {
 	compile('com.nexmo:client:3.3.0')
 }
 ```
-Now, add the following information to your `application.properties` file.  This file contains environment variables that will get overwritten at runtime.  However, for local development it's an easy way to provide swappable credentials.
+
+### Provide Information
+Now, add the following information to your `application.properties` file.
 
 ```
 # Add your nexmo credentials
@@ -199,9 +181,11 @@ nexmo.api.key=your-api-key
 nexmo.api.secret=your-api-secret
 ```
 
+### Define the Beans
 Next, we are going to define the `NexmoClient` and `VerifyClient` as beans.  This will allow Spring to inject them as dependencies into our `NexmoVerificationService`.  Add the following definitions to the `TwoFactorApplication` class.
 
 ```java
+// src/main/net/smcrow/demo/twofactor/TwofactorApplication.java
 @Bean
 public NexmoClient nexmoClient(Environment environment) {
 	AuthMethod auth = new TokenAuthMethod(
@@ -218,11 +202,12 @@ public VerifyClient nexmoVerifyClient(NexmoClient nexmoClient) {
 ```
 
 ### Create the `NexmoVerificationService`
-We are going to create a service that will allow us to make requests to, and receive responses from, Nexmo.  Ultimately, we'll be using the [nexmo-java](https://github.com/Nexmo/nexmo-java) client to interact with Nexmo.  But it's a good idea to wrap this in a service.
+We are going to create a service that will allow us to instruct the client to make requests.
 
-Here's the service, let's go into detail on what it does.
+Add the `NexmoVerificationService` to the `verify` package.
 
 ```java
+// src/main/net/smcrow/demo/twofactor/verify/NexmoVerificationService.java
 @Service
 public class NexmoVerificationService {
     private static final String APPLICATION_BRAND = "2FA Demo";
@@ -292,16 +277,20 @@ public class NexmoVerificationService {
 }
 ```
 
-There are two main methods in this class `requestVerification` which will send the user a text message, and `verify` which will check to see if the code is the same code we sent them.
+There are two main methods in this class:
+
+* `requestVerficiation` which is used to, well, request verification.
+* `verify` which is used to verify the provided code provided by the user.
 
 #### The `requestVerification` Method
 The method first checks to see if we already have a pending verification request for the user's phone number.  This allows us to serve the same request id to the user if they attempt to login to the application again.
 
-If there isn't any prior verification then a new verification code is requested and saved to the database.  If, for some reason, we are unable to assign them a new code a `VerificationRequestFailedException` is thrown.
+If there isn't any prior verification, then a new verification code is requested and saved to the database.  If, for some reason, we are unable to assign them a new code a `VerificationRequestFailedException` is thrown.
 
 Add this exception to the `verify` package.
 
 ```java
+// src/main/net/smcrow/demo/twofactor/verify/VerificationRequestFailedException.java
 public class VerificationRequestFailedException extends Throwable {
     public VerificationRequestFailedException() {
         this("Failed to verify request.");
@@ -327,6 +316,8 @@ The `retrieveVerification` method will throw a `VerificationNotFoundException` i
 Add this exception to the `verify` package.
 
 ```java
+// src/main/net/smcrow/demo/twofactor/verify/VerificationNotFoundException.java
+
 public class VerificationNotFoundException extends Throwable {
     public VerificationNotFoundException() {
         this("Failed to find verification.");
@@ -338,15 +329,16 @@ public class VerificationNotFoundException extends Throwable {
 }
 ```
 
-### Using the `NexmoVerificationService`
+## Using the `NexmoVerificationService`
 We're going to use the service for both sending a code and verifying the code.  Sending a code is done after a successful login.
 
-#### Triggering the Request for Verification
+### Triggering the Request for Verification
 Let's implement a custom `AuthenticationSuccessHandler` which will be called after the user has successfully authenticated.
 
 Add the `TwoFactorAuthenticationSuccessHandler` to the `verify` package.
 
 ```java
+// src/main/net/smcrow/demo/twofactor/verify/TwoFactorAuthenticationSuccessHandler.java
 @Component
 public class TwoFactorAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
     private static final String VERIFICATION_URL = "/verify";
@@ -388,9 +380,10 @@ When a user has successfully authenticated we check to see if they have a phone 
 
 If they have a phone number, we request that a code be sent to their device. If they don't, or we are unable to send a code, we allow them to bypass verification.  
 
-The `bypassVerification` method relies on the `updateAuthentication` method of the `NexmoVerificationService`.  Add this method to the `NexmoVerificationService`:
+The `bypassVerification` method relies on the `updateAuthentication` method of the `NexmoVerificationService`.  Add this to the `NexmoVerificationService`:
 
 ```java
+// src/main/net/smcrow/demo/twofactor/verify/NexmoVerificationService.java
 public void updateAuthentication(Authentication authentication) {
     Role role = retrieveRoleFromDatabase(authentication.getName());
     List<GrantedAuthority> authorities = new ArrayList<>();
@@ -417,7 +410,7 @@ private Role retrieveRoleFromDatabase(String username) {
 
 This method is used to assign the `role` defined in the database to the current user and removes the `PRE_VERIFICATION_USER` role.
 
-#### Prompting The User for a Code
+### Prompting The User for a Code
 Once the user has been sent a code they are forwarded to the [verification](http://localhost:8080/verify) page.  Let's work on creating that page next.
 
 The example application is setup using [Thymeleaf](https://www.thymeleaf.org/).  Create a new HTML file called `verify.html` in the `resources/templates` directory.
@@ -454,6 +447,7 @@ The example application is setup using [Thymeleaf](https://www.thymeleaf.org/). 
 We also need a controller to serve the page to the user.  Create the `VerificationController` in the `verify` package.
 
 ```java
+// src/main/net/smcrow/demo/twofactor/verify/VerificationController.java
 @Controller
 public class VerificationController {
     @Autowired
@@ -485,16 +479,17 @@ public class VerificationController {
 }
 ```
 
-This controller allows us to serve the verification page via the `index` method, and to handle the form submission via the `verify` method.
+This controller serves the verification page via the `index` method, and handles the form submission via the `verify` method.
 
-Notice, this page is only accessible to users with the `PRE_VERIFICATION_USER` role.  On successful verification, the `updateAuthentication` method is, once again, used to replace this role with their persisted one.
+This page is only accessible to users with the `PRE_VERIFICATION_USER` role.  On successful verification, the `updateAuthentication` method is, once again, used to replace this role with their persisted one.
 
-#### Finishing Up the Verification Chain
+### Finishing Up the Verification Chain
 The final step is to update the `AppSecurityConfiguration` to use our `TwoFactorAuthenticationSuccessHandler`.
 
 Modify the `AppSecurityConfiguration` to wire in our handler and use it via the `successHandler` method.
 
 ```java
+// src/main/net/smcrow/demo/twofactor/AppSecurityConfiguration.java
 @Autowired
 private TwoFactorAuthenticationSuccessHandler twoFactorAuthenticationSuccessHandler;
 
@@ -509,6 +504,15 @@ protected void configure(HttpSecurity httpSecurity) throws Exception {
 ```
 
 ## Try it Out!
+You will need to add your phone number to the `data.sql` file. 
+
+We aren't going to be doing any validation on the phone number, and it needs to be in [E.164](https://en.wikipedia.org/wiki/E.164) format.
+
+```sql
+INSERT INTO user (username, password, role, phone) VALUES
+    ('phone', 'phone', 'USER', 15555555555);
+```
+
 You should now be up and running.  Boot up the application, and try to login.  Assuming that your api key, api secret, and seeded phone number are correct; you should receive a text message with a four-digit code.
 
 ## What Did We Do?
