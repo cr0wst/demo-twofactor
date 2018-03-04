@@ -284,7 +284,7 @@ There are two main methods in this class:
 * `verify` which is used to verify the provided code provided by the user.
 
 #### The `requestVerification` Method
-The method first checks to see if we already have a pending verification request for the user's phone number.  This allows us to serve the same request id to the user if they attempt to login to the application again.
+The method first checks to see if we already have a pending verification request for the user's phone number.  This allows us to serve the same request id to the user if they attempt to log in to the application again.
 
 If there isn't any prior verification, then a new verification code is requested and saved to the database.  If for some reason, we are unable to assign them a new code a `VerificationRequestFailedException` is thrown.
 
