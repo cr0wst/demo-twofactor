@@ -41,7 +41,7 @@ There are three pages:
 
 * The [home page](http://localhost:8080/login) - accessible by everybody.
 * The [login page](http://localhost:8080/login) - allows users to enter a username and password (default is `demo`/`demo`).
-* The [secret page](http://localhost:8080/seret) - accessible only by users with the `Role.USERS` role.
+* The [secret page](http://localhost:8080/secret) - accessible only by users with the `Role.USERS` role.
 
 # Adding Two-Factor Authentication
 When users log in, our only acceptance criteria is that they have provided a username and a password.  What if this information was stolen?  What is something that we could use which is physically located near the user?
