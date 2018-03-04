@@ -1,6 +1,6 @@
 # Beefing Up Your Spring Security with Two-Factor Authentication
 
-Two-Factor authentication adds an extra layer of security to your web application by asking users to provide a second form of identification.  Common second factors include:
+Two-factor authentication adds an extra layer of security to your web application by asking users to provide a second form of identification.  Common second factors include:
 
 * Authenticator codes
 * Biometrics
@@ -11,14 +11,13 @@ Let's explore how you can add two-factor authentication to an existing web appli
 # Before you begin
 In order to follow along with the tutorial you will need the following:
 
-* A general understanding of Java and Enterprise Java technologies.
+* A general understanding of Java and Enterprise Java technologies
 * The [Java SDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html) installed on your computer
-* A [Nexmo Developer Account](https://developer.nexmo.com/) along with an api key and secret.
+* A [Nexmo Developer Account](https://developer.nexmo.com/) along with an api key and secret
 * A clone of the [`getting-started`](https://github.com/cr0wst/demo-twofactor/tree/getting-started) branch on GitHub
 
 # Get the Code
-First, clone the `getting-started` branch.  This is the code base we will be working with.  It is a very rudimentary application with Spring security.
-
+First, clone the `getting-started` branch.
 ```
 $ git clone git@github.com:cr0wst/demo-twofactor.git -b getting-started
 $ cd demo-twofactor
@@ -37,17 +36,16 @@ This will download any dependencies, compile the application, and start the embe
 
 Once the server has been started, you should be able to navigate to http://localhost:8080 to see the sample application.
 
-## A Little About the Application
-The sample application is built using Spring and Spring Security.  There are three pages:
+There are three pages:
 
 * The [home page](http://localhost:8080/login) - accessible by everybody.
 * The [login page](http://localhost:8080/login) - allows users to enter a username and password (default is `demo`/`demo`).
 * The [secret page](http://localhost:8080/seret) - accessible only by users with the `Role.USERS` role.
 
 # Adding Two-Factor Authentication
-Currently, when a user logs in we have no way of determining if they are who they say they are.  Our only acceptance criteria is that they have provided a username and a password.  What if this information was stolen?
+When a user logs in our only acceptance criteria is that they have provided a username and a password.  What if this information was stolen?  What is something that we could use physically located near the user?
 
-There is something that I guarantee almost 90% of you have within arm's reach.  A mobile, not necessarily a smart one, phone. 
+There is something that I guarantee almost 90% of you have within arm's reach.  A mobile phone. 
 
 Here's how it's going to work:
 
