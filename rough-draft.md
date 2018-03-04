@@ -88,34 +88,6 @@ public Collection<? extends GrantedAuthority> getAuthorities() {
 
 This class contains the information about the user once they are authenticated.  The `getAuthorities` method is used to see what roles they have.
 
-### Capture the User's Phone Number
-Users in our system don't currently have a phone number property.
-
-Update the `User` entity with the `phone` field.
-
-```java
-@Column(name = "phone")
-String phone;
-
-public String getPhone() {
-    return phone;
-}
-
-public void setPhone(String phone) {
-    this.phone = phone;
-}
-```
-
-#### Seeding User Data
-In a normal application, you would capture this information by having the users set it on their profile.  In the sample information, data is seeded in the `main/resources/data.sql` file.
-
-You can add the following to this file to seed a user with phone number.  We aren't going to be doing any validation on the phone number, and it needs to be in [E.164](https://en.wikipedia.org/wiki/E.164) format.
-
-```sql
-INSERT INTO user (username, password, role, phone) VALUES
-    ('phone', 'phone', 'USER', 15555555555);
-```
-
 ### Handling Verification Information
 Nexmo will provide us with a *request id* that we will need to use when confirming the code provided by the user. There are a variety of ways we can store this information. In this tutorial, we will be persisting it into a database.
 
