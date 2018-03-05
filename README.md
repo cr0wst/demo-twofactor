@@ -17,7 +17,7 @@ In order to follow along with the tutorial you will need the following:
 * A clone of the [`getting-started`](https://github.com/cr0wst/demo-twofactor/tree/getting-started) branch on GitHub
 
 # Get the Code
-First, clone the `getting-started` branch.
+Clone the `getting-started` branch.
 
 ```
 $ git clone https://github.com/cr0wst/demo-twofactor.git -b getting-started
